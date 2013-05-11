@@ -7,6 +7,7 @@ class Jeff < RTanque::Bot::Brain
     pick_spot!
     turn_to_spot!
     acquire_target!
+    determine_target_vectors!
     fire_when_ready!    
   end
 
@@ -27,20 +28,21 @@ class Jeff < RTanque::Bot::Brain
   def pick_spot!
     if at_spot? || time_for_new_spot?
       @spot = nil
-      @tick_count = 0
     end
     if @spot.nil?
+      @tick_count = 0
       @spot = RTanque::Point.new(rand(self.arena.width), rand(self.arena.height), self.arena)
     end
+    @tick_count += 1
   end
 
   def turn_to_spot!
     self.command.heading = self.sensors.position.heading(@spot)
 
     distance_to_spot = self.sensors.position.distance(@spot)
-    if distance_to_spot < 15
+    if distance_to_spot < 25
       self.command.speed = 1
-    elsif distance_to_spot < 25
+    elsif distance_to_spot < 50
       self.command.speed = 2
     else
       self.command.speed = 3
@@ -51,32 +53,54 @@ class Jeff < RTanque::Bot::Brain
     if @target = self.sensors.radar.sort_by(&:distance).first
       # lock radar and turret on target
       self.command.radar_heading = @target.heading
-      self.command.turret_heading = @target.heading
+      #self.command.turret_heading = @target.heading
     else
       # naively spit left
+      @target_last_position = nil
+      @expected_location = nil
       self.command.radar_heading = self.sensors.radar_heading - RTanque::Heading::EIGHTH_ANGLE
+    end
+  end
+
+  def determine_target_vectors!
+    return unless @target
+
+    target_position = calculate_position(self.sensors.position, @target.heading, @target.distance)
+    if @target_last_position
+      target_movement_vector = @target_last_position.heading(target_position)
+      target_speed = @target_last_position.distance(target_position)
+
+      # figure out where the target will be next tick, and where we will be next tick
+      ticks_until_bullet_hits = @target.distance / fire_power(@target.distance) / 2
+      target_expected_location = calculate_position(target_position, target_movement_vector, target_speed * ticks_until_bullet_hits)
+      my_expected_location = calculate_position(self.sensors.position, self.sensors.heading, self.sensors.speed)
+      self.command.turret_heading = my_expected_location.heading(target_expected_location)
+    end
+    @target_last_position = target_position
+  end
+
+  def fire_power(distance)
+    if distance < 250
+      5
+    else
+      10
     end
   end
 
   def fire_when_ready!
     if @target
-      if (self.sensors.turret_heading.to_degrees - @target.heading.to_degrees).abs < 2
+      if (self.sensors.radar_heading.to_degrees - @target.heading.to_degrees).abs < 2
         # control your firepower
-        if @target.distance < 250
-          self.command.fire(5)
-        elsif @target.distance < 500
-          self.command.fire(10)
-        else
-          self.command.fire(1)
-        end
+        self.command.fire(fire_power(@target.distance))
       end
     end
   end
 
-  def calculate_target_position(target)
+  def calculate_position(start_position, heading, distance)
     RTanque::Point.new(
-      self.sensors.position.x + Math.cos(target.heading) * target.distance,
-      self.sensors.position.y + Math.sin(target.heading) * target.distance
+      start_position.x + Math.sin(heading) * distance,
+      start_position.y + Math.cos(heading) * distance,
+      self.arena
     )
   end
 
