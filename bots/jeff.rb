@@ -50,7 +50,7 @@ class Jeff < RTanque::Bot::Brain
   end
 
   def acquire_target!
-    if @target = self.sensors.radar.sort_by(&:distance).first
+    if @target = self.sensors.radar.sort_by(&:distance).reject{|t| t.name == NAME}.first
       # lock radar and turret on target
       self.command.radar_heading = @target.heading
       #self.command.turret_heading = @target.heading
@@ -59,6 +59,7 @@ class Jeff < RTanque::Bot::Brain
       @target_last_position = nil
       @expected_location = nil
       self.command.radar_heading = self.sensors.radar_heading - RTanque::Heading::EIGHTH_ANGLE
+      self.command.turret_heading = self.command.radar_heading
     end
   end
 
