@@ -18,8 +18,17 @@ class Jeff < RTanque::Bot::Brain
     self.sensors.position.within_radius?(@spot, 10)
   end
 
+  def time_for_new_spot?
+    return false if @tick_count.nil?
+
+    @tick_count > 60 && rand(4) <= 1
+  end
+
   def pick_spot!
-    @spot = nil if at_spot?
+    if at_spot? || time_for_new_spot?
+      @spot = nil
+      @tick_count = 0
+    end
     if @spot.nil?
       @spot = RTanque::Point.new(rand(self.arena.width), rand(self.arena.height), self.arena)
     end
@@ -27,8 +36,12 @@ class Jeff < RTanque::Bot::Brain
 
   def turn_to_spot!
     self.command.heading = self.sensors.position.heading(@spot)
-    if self.sensors.position.distance(@spot) < 15
+
+    distance_to_spot = self.sensors.position.distance(@spot)
+    if distance_to_spot < 15
       self.command.speed = 1
+    elsif distance_to_spot < 25
+      self.command.speed = 2
     else
       self.command.speed = 3
     end
