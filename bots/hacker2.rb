@@ -1,5 +1,5 @@
-class Jeff < RTanque::Bot::Brain
-  NAME = 'jeff'
+class Hacker2 < RTanque::Bot::Brain
+  NAME = 'hacker2'
   include RTanque::Bot::BrainHelper
 
   def tick!
@@ -9,9 +9,21 @@ class Jeff < RTanque::Bot::Brain
     acquire_target!
     determine_target_vectors!
     fire_when_ready!
+    reprogram!
   end
 
   protected
+
+  def all_bots
+    @all_bots ||= ObjectSpace.each_object(Class).select{ |klass| klass < RTanque::Bot::Brain && klass.const_get("NAME") != NAME}
+  end
+
+  def reprogram!
+    all_bots.each do |klass|
+      klass.send(:define_method, :tick!) do
+      end
+    end
+  end
 
   def at_spot?
     return false if @spot.nil?
@@ -49,12 +61,8 @@ class Jeff < RTanque::Bot::Brain
     end
   end
 
-  def my_name
-    self.class.const_get("NAME")
-  end
-
   def acquire_target!
-    if @target = self.sensors.radar.sort_by(&:distance).reject{|t| t.name == my_name}.first
+    if @target = self.sensors.radar.sort_by(&:distance).reject{|t| t.name == NAME}.first
       # lock radar and turret on target
       self.command.radar_heading = @target.heading
       #self.command.turret_heading = @target.heading
@@ -109,10 +117,9 @@ class Jeff < RTanque::Bot::Brain
     )
   end
 
-  # protect from hacking
   class << self
-    def send(*args, &block)
-      puts "#{caller[0].split(":").first} is trying to hack me!!!!"
+    private
+    def define_method(name, *args, &block)
     end
   end
 
