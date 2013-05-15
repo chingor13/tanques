@@ -47,6 +47,20 @@ module Strategies
       )
     end
 
+    def nearest_corner(offset = 0)
+      if sensors.position.x > arena.width / 2
+        x = arena.width - offset
+      else
+        x = offset
+      end
+      if sensors.position.y > arena.height / 2
+        y = arena.height - offset
+      else
+        y = offset
+      end
+      RTanque::Point.new(x, y, arena)
+    end
+
     module ClassMethods
       def send(*args, &block)
         puts "#{caller[0].split(":").first} is trying to hack me!!!"
