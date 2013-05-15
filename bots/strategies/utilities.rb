@@ -7,20 +7,36 @@ module Strategies
         near_right?(distance)
     end
 
-    def near_top?(distance)
+    def near_top?(distance = 100)
       sensors.position.y >= arena.height - distance
     end
 
-    def near_bottom?(distance)
+    def near_bottom?(distance = 100)
       sensors.position.y <= distance
     end
 
-    def near_right?(distance)
+    def near_right?(distance = 100)
       sensors.position.x >= arena.width - distance
     end
 
-    def near_left?(distance)
+    def near_left?(distance = 100)
       sensors.position.x <= distance
+    end
+
+    def northish?(heading)
+      Math.sin(heading) < 0
+    end
+
+    def southish?(heading)
+      Math.sin(heading) > 0
+    end
+
+    def westish?(heading)
+      Math.cos(heading) > 0
+    end
+
+    def eastish?(heading)
+      Math.cos(heading) < 0
     end
 
     def calculate_position(start_position, heading, distance)

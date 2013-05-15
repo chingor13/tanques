@@ -5,6 +5,9 @@ require 'strategies/predictive_targetting'
 require 'strategies/naive_firing'
 require 'strategies/run_away'
 require 'strategies/strafe'
+require 'strategies/charge'
+require 'strategies/damage_detection'
+require 'pp'
 
 class Strategist < RTanque::Bot::Brain
   NAME = 'strategist'
@@ -13,12 +16,13 @@ class Strategist < RTanque::Bot::Brain
   def tick!
     predictive_targetting!
     naive_firing!
-    if target
+    if false && target
       #run_away!
       strafe!
     else
       random_location!
     end
+    damage_detection!
   end
 
   protected
@@ -29,4 +33,6 @@ class Strategist < RTanque::Bot::Brain
   include Strategies::NaiveFiring
   include Strategies::RunAway
   include Strategies::Strafe
+  include Strategies::Charge
+  include Strategies::DamageDetection
 end

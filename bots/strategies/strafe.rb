@@ -2,8 +2,33 @@ module Strategies
   module Strafe
     def strafe!
       if target
-        #strafe_left!
-        strafe_right!
+        if near_top?
+          if westish?(target.heading)
+            strafe_left!
+          else
+            strafe_right!
+          end
+        elsif near_bottom?
+          if westish?(target.heading)
+            strafe_right!
+          else
+            strafe_left!
+          end
+        elsif near_left?
+          if northish?(target.heading)
+            strafe_right!
+          else
+            strafe_left!
+          end
+        elsif near_right?
+          if northish?(target.heading)
+            strafe_left!
+          else
+            strafe_right!
+          end
+        else
+          strafe_left!
+        end
       end
       self.command.speed = 10
     end
