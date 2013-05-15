@@ -1,5 +1,5 @@
-class Ghost < RTanque::Bot::Brain
-  NAME = 'ghost'
+class KageBunshin < RTanque::Bot::Brain
+  NAME = 'kage_bunshin'
   include RTanque::Bot::BrainHelper
 
   def tick!
@@ -18,7 +18,16 @@ class Ghost < RTanque::Bot::Brain
     return if @hidden_from_sensors
     my_name = NAME
     RTanque::Bot::Sensors.send(:define_method, :radar) do 
-      self["radar"].reject{|reflection| reflection.name == name}
+      self["radar"].map do |reflection| 
+        if reflection.name == my_name
+          if reflection.distance > 400
+            reflection.heading += 6 * RTanque::Heading::ONE_DEGREE
+          else
+            reflection.heading += 10 * RTanque::Heading::ONE_DEGREE
+          end
+        end
+        reflection
+      end
     end
     @hidden_from_sensors = true
   end
