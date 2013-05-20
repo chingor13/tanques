@@ -4,19 +4,14 @@ module Strategies
       fire_when_ready!
     end
 
-    def fire_power(distance)
-      if distance < 250
-        5
-      else
-        10
-      end
-    end
-
     def fire_when_ready!
       if @target
         if (self.sensors.radar_heading.to_degrees - @target.heading.to_degrees).abs < 2
           # control your firepower
-          self.command.fire(fire_power(@target.distance))
+          if sensors.gun_energy >= 5
+            log "firing"
+            command.fire(5)
+          end
         end
       end
     end

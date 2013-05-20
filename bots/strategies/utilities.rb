@@ -1,5 +1,9 @@
 module Strategies
   module Utilities
+    def log(message)
+      puts "#{self.class.const_get('NAME')} (#{sensors.ticks}): #{message}"
+    end
+
     def near_edge?(distance = 100)
       near_top?(distance) ||
         near_bottom?(distance) ||
@@ -39,12 +43,18 @@ module Strategies
       Math.cos(heading) < 0
     end
 
-    def calculate_position(start_position, heading, distance)
-      RTanque::Point.new(
-        start_position.x + Math.sin(heading) * distance,
-        start_position.y + Math.cos(heading) * distance,
-        self.arena
-      )
+    def calculate_position(start_position, heading, distance, heading_delta = 0, ticks = 1)
+      pos = start_position
+      head = heading
+      ticks.times do
+        pos = RTanque::Point.new(
+          start_position.x + Math.sin(heading) * distance,
+          start_position.y + Math.cos(heading) * distance,
+          self.arena
+        )
+        heading += heading_delta
+      end
+      pos
     end
 
     def nearest_corner(offset = 0)

@@ -1,5 +1,6 @@
 $:.unshift(File.dirname(__FILE__))
 require 'strategies/utilities'
+require 'strategies/storage'
 require 'strategies/random_location'
 require 'strategies/targetting'
 require 'strategies/predictive_targetting'
@@ -46,6 +47,7 @@ class Strategist < RTanque::Bot::Brain
     # movement
     #random_location!
 command.speed = 0
+log "movement_type: #{movement_type}"
 
     # turret / gun
     predictive_targetting!
@@ -59,6 +61,7 @@ command.speed = 0
   protected
 
   include Strategies::Utilities
+  include Strategies::Storage
   include Strategies::RandomLocation
   include Strategies::Targetting
   include Strategies::PredictiveTargetting 
