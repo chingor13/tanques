@@ -8,9 +8,9 @@ module Strategies
       if target && command.turret_heading
         if (sensors.turret_heading.to_degrees - command.turret_heading.to_degrees).abs < 1
           # control your firepower
-          if sensors.gun_energy >= 5
-            command.fire(5)
-          end
+          command.fire(5)
+        elsif sensors.gun_energy >= 5
+          command.fire(1)
         end
       end
     end

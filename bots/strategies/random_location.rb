@@ -8,7 +8,7 @@ module Strategies
     def at_spot?
       return false if @spot.nil?
 
-      self.sensors.position.within_radius?(@spot, 10)
+      sensors.position.within_radius?(@spot, 10)
     end
 
     def time_for_new_spot?
@@ -23,21 +23,21 @@ module Strategies
       end
       if @spot.nil?
         @tick_count = 0
-        @spot = RTanque::Point.new(rand(self.arena.width), rand(self.arena.height), self.arena)
+        @spot = RTanque::Point.new(rand(arena.width), rand(arena.height), arena)
       end
       @tick_count += 1
     end
 
     def turn_to_spot!
-      self.command.heading = self.sensors.position.heading(@spot)
+      command.heading ||= sensors.position.heading(@spot)
 
-      distance_to_spot = self.sensors.position.distance(@spot)
+      distance_to_spot = sensors.position.distance(@spot)
       if distance_to_spot < 25
-        self.command.speed = 1
+        command.speed = 1
       elsif distance_to_spot < 50
-        self.command.speed = 2
+        command.speed = 2
       else
-        self.command.speed = 3
+        command.speed = 3
       end
     end
   end

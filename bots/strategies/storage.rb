@@ -25,5 +25,11 @@ module Strategies
       fetch(type, sensors.ticks + relative)
     end
 
+    def every_x_ticks(x, &block)
+      if sensors.ticks % x.to_i == 0
+        yield(block)
+      end
+    end
+
   end
 end

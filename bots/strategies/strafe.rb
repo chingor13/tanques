@@ -30,15 +30,15 @@ module Strategies
           strafe_left!
         end
       end
-      self.command.speed = 10
+      command.speed = 3
     end
 
-    def strafe_left!
-      self.command.heading = target.heading - Math::PI/2
+    def strafe_left!(offset = 0)
+      command.heading = target.heading - (Math::PI/2 + offset)
     end
 
-    def strafe_right!
-      self.command.heading = target.heading + Math::PI/2
+    def strafe_right!(offset = 0)
+      command.heading = target.heading + (Math::PI/2 + offset)
     end
   end
 end
