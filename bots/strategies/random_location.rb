@@ -14,7 +14,7 @@ module Strategies
     def time_for_new_spot?
       return false if @tick_count.nil?
 
-      @tick_count > 60 && rand(4) <= 1
+      @tick_count > 60 && rand(20) <= 1
     end
 
     def pick_spot!

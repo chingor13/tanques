@@ -17,6 +17,11 @@ module Strategies
     end
 
     def acquire_target!
+      @target = nearest_target
+      @last_target_name = @target.name if @target
+    end
+
+    def sticky_target!
       @target = nearest_target_named(last_target_name) ||
                 nearest_target
       @last_target_name = @target.name if @target

@@ -1,6 +1,10 @@
 module Strategies
   module GameModeDetect
     def game_mode_detect!
+      if target.nil?
+        @bots_seen = {}
+        @game_mode = nil
+      end
       @bots_seen ||= {}
       sensors.radar.each do |reflection|
         @bots_seen[reflection.name] = true
@@ -24,6 +28,10 @@ module Strategies
         command.heading = RTanque::Heading.new_between_points(sensors.position, @nearest_corner)
         command.speed = 3
         command.radar_heading = sensors.radar_heading - RTanque::Heading::EIGHTH_ANGLE
+        if nearest = nearest_enemy
+          command.turret_heading = nearest.heading
+        end
+        command.turret_heading ||= command.radar_heading
       end
     end
 

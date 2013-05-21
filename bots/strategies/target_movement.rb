@@ -6,16 +6,20 @@ module Strategies
       if @target_name != target.name
         # new target
         clear_store!(:target_position)
-        clear_store!(:target_movement)
-        clear_store!(:target_movement_delta)
+        clear_store!(:target_heading)
+        clear_store!(:target_speed)
+        clear_store!(:target_heading_delta)
+        clear_store!(:target_speed_delta)
         @target_name = target.name
       end
 
       store!(:target_position, calculate_position(sensors.position, target.heading, target.distance))
       if target_last_position
-        store!(:target_movement, [RTanque::Heading.new_between_points(target_last_position, target_position), target_last_position.distance(target_position)])
-        if last_movement_vector
-          store!(:target_movement_delta, [this_movement_vector[0].delta(last_movement_vector[0]), this_movement_vector[1] - last_movement_vector[0]])
+        store!(:target_heading, RTanque::Heading.new_between_points(target_last_position, target_position))
+        store!(:target_speed, target_last_position.distance(target_position))
+        if target_last_heading
+          store!(:target_heading_delta, target_last_heading.delta(target_heading))
+          store!(:target_speed_delta, target_last_speed - target_speed)
         end
       end
     end
@@ -28,6 +32,38 @@ module Strategies
       fetch_relative(:target_position, -1)
     end
 
+    def target_heading
+      fetch(:target_heading)
+    end
+
+    def target_last_heading
+      fetch_relative(:target_heading, -1)
+    end
+
+    def target_speed
+      fetch(:target_speed)
+    end
+
+    def target_last_speed
+      fetch_relative(:target_speed, -1)
+    end
+
+    def target_heading_delta
+      fetch(:target_heading_delta)
+    end
+
+    def target_last_heading_delta
+      fetch_relative(:target_heading_delta, -1)
+    end
+
+    def target_speed_delta
+      fetch(:target_speed_delta)
+    end
+
+    def target_last_speed_delta
+      fetch_relative(:target_speed_delta, -1)
+    end
+
     def movement_type
       if moving_linearly?
         return :linear
@@ -38,29 +74,13 @@ module Strategies
       end
     end
 
-    def last_movement_vector
-      fetch_relative(:target_movement, -1)
-    end
-
-    def this_movement_vector
-      fetch(:target_movement)
-    end
-
-    def last_movement_vector_delta
-      fetch_relative(:target_movement_delta, -1)
-    end
-
-    def this_movement_vector_delta
-      fetch(:target_movement_delta)
-    end
-
     def moving_linearly?
-      this_movement_vector_delta && this_movement_vector_delta[0] < RTanque::Heading::ONE_DEGREE
+      target_heading_delta && target_heading_delta < RTanque::Heading::ONE_DEGREE
     end
 
     def moving_circularly?
-      if this_movement_vector_delta && last_movement_vector_delta
-        (this_movement_vector_delta[0] - last_movement_vector_delta[0]).abs < 0.001
+      if target_heading_delta && target_last_heading_delta
+        (target_heading_delta - target_last_heading_delta).abs < 0.001
       end
     end
   end

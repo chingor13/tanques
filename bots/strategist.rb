@@ -11,6 +11,8 @@ require 'strategies/charge'
 require 'strategies/damage_detection'
 require 'strategies/game_mode_detect'
 require 'strategies/target_movement'
+require 'strategies/safe_firing'
+require 'strategies/avoid_center'
 require 'pp'
 
 class Strategist < RTanque::Bot::Brain
@@ -33,9 +35,14 @@ class Strategist < RTanque::Bot::Brain
   end
 
   def melee_tick!
+    acquire_target!
+    follow_target!
+    record_target_position!
+
+    avoid_center!
+
     predictive_targetting!
-    naive_firing!
-    random_location!
+    safe_firing!
   end
 
   def one_on_one_tick!
@@ -45,9 +52,7 @@ class Strategist < RTanque::Bot::Brain
     record_target_position!
 
     # movement
-    #random_location!
-command.speed = 0
-log "movement_type: #{movement_type}"
+    random_location!
 
     # turret / gun
     predictive_targetting!
@@ -72,4 +77,6 @@ log "movement_type: #{movement_type}"
   include Strategies::DamageDetection
   include Strategies::GameModeDetect
   include Strategies::TargetMovement
+  include Strategies::SafeFiring
+  include Strategies::AvoidCenter
 end

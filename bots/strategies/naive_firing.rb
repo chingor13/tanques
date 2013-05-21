@@ -5,11 +5,10 @@ module Strategies
     end
 
     def fire_when_ready!
-      if @target
-        if (self.sensors.radar_heading.to_degrees - @target.heading.to_degrees).abs < 2
+      if target && command.turret_heading
+        if (sensors.turret_heading.to_degrees - command.turret_heading.to_degrees).abs < 1
           # control your firepower
           if sensors.gun_energy >= 5
-            log "firing"
             command.fire(5)
           end
         end
