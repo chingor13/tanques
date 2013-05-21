@@ -3,6 +3,7 @@ module Strategies
 
     def avoid_center!
       if in_center?
+        log "in center"
         turn_to_corner!
       else
         clear_corner!
