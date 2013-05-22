@@ -14,6 +14,7 @@ require 'strategies/game_mode_detect'
 require 'strategies/target_movement'
 require 'strategies/safe_firing'
 require 'strategies/avoid_center'
+require 'strategies/face_yell'
 require 'pp'
 
 class Strategist < RTanque::Bot::Brain
@@ -34,6 +35,7 @@ class Strategist < RTanque::Bot::Brain
     else
       determine_game_mode!
     end
+    face_yell!
   end
 
   def melee_tick!
@@ -85,4 +87,5 @@ class Strategist < RTanque::Bot::Brain
   include Strategies::TargetMovement
   include Strategies::SafeFiring
   include Strategies::AvoidCenter
+  include Strategies::FaceYell
 end

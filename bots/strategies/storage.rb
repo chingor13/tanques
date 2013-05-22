@@ -21,6 +21,11 @@ module Strategies
       @storage[type][tick % STORAGE_SIZE]
     end
 
+    def fetch_all(type)
+      @storage ||= {}
+      @storage[type] ||= Array.new(STORAGE_SIZE)
+    end
+
     def fetch_relative(type, relative)
       fetch(type, sensors.ticks + relative)
     end

@@ -5,6 +5,7 @@ class Strategist < RTanque::Bot::Brain
   include RTanque::Bot::BrainHelper
 
   def tick!
+    @game_mode ||= :one_on_one
     game_mode_detect!
     damage_detection!
 
@@ -17,6 +18,7 @@ class Strategist < RTanque::Bot::Brain
     else
       determine_game_mode!
     end
+    face_yell!
   end
 
   def melee_tick!
@@ -28,6 +30,10 @@ class Strategist < RTanque::Bot::Brain
 
     predictive_targetting!
     safe_firing!
+
+    # default to spin
+    command.radar_heading ||= sensors.radar_heading - RTanque::Heading::EIGHTH_ANGLE
+    command.turret_heading ||= command.radar_heading
   end
 
   def one_on_one_tick!
@@ -36,7 +42,6 @@ class Strategist < RTanque::Bot::Brain
     follow_target!
     record_target_position!
 
-    # movement
     random_location!
 
     # turret / gun
@@ -159,8 +164,17 @@ class Strategist < RTanque::Bot::Brain
       @storage[type] ||= Array.new(STORAGE_SIZE)
       @storage[type][tick % STORAGE_SIZE]
     end
+    def fetch_all(type)
+      @storage ||= {}
+      @storage[type] ||= Array.new(STORAGE_SIZE)
+    end
     def fetch_relative(type, relative)
       fetch(type, sensors.ticks + relative)
+    end
+    def every_x_ticks(x, &block)
+      if sensors.ticks % x.to_i == 0
+        yield(block)
+      end
     end
     def random_location!
       pick_spot!
@@ -168,7 +182,7 @@ class Strategist < RTanque::Bot::Brain
     end
     def at_spot?
       return false if @spot.nil?
-      self.sensors.position.within_radius?(@spot, 10)
+      sensors.position.within_radius?(@spot, 10)
     end
     def time_for_new_spot?
       return false if @tick_count.nil?
@@ -180,20 +194,44 @@ class Strategist < RTanque::Bot::Brain
       end
       if @spot.nil?
         @tick_count = 0
-        @spot = RTanque::Point.new(rand(self.arena.width), rand(self.arena.height), self.arena)
+        @spot = RTanque::Point.new(rand(arena.width), rand(arena.height), arena)
       end
       @tick_count += 1
     end
     def turn_to_spot!
-      self.command.heading = self.sensors.position.heading(@spot)
-      distance_to_spot = self.sensors.position.distance(@spot)
+      command.heading ||= sensors.position.heading(@spot)
+      distance_to_spot = sensors.position.distance(@spot)
       if distance_to_spot < 25
-        self.command.speed = 1
+        command.speed = 1
       elsif distance_to_spot < 50
-        self.command.speed = 2
+        command.speed = 2
       else
-        self.command.speed = 3
+        command.speed = 3
       end
+    end
+    def random_heading!
+      pick_heading!
+      turn_to_heading!
+    end
+    def pick_heading!
+      if time_for_new_heading?
+        @heading = nil
+      end
+      if @heading.nil?
+        log "picking new heading"
+        @heading_tick_count = 0
+        random_change = RTanque::Heading.new_from_degrees(rand(60) + 30)  # 30-90 degrees
+        @heading = sensors.heading + ([true,false].sample ? random_change : -1 * random_change).to_f
+      end
+      @heading_tick_count += 1
+    end
+    def turn_to_heading!
+      command.heading = @heading
+      command.speed = 3
+    end
+    def time_for_new_heading?
+      return false if @heading_tick_count.nil?
+      @heading_tick_count > 60 && rand(20) <= 1
     end
     def target
       @target
@@ -246,19 +284,27 @@ class Strategist < RTanque::Bot::Brain
     end
     def fire_when_ready!
       if target && command.turret_heading
-        if (sensors.turret_heading.to_degrees - command.turret_heading.to_degrees).abs < 1
-          # control your firepower
-          if sensors.gun_energy >= 5
+        if (sensors.turret_heading.to_degrees - command.turret_heading.to_degrees).abs < 3
+          if target.distance < 75
+            command.fire(1)
+          else
+            # control your firepower
             command.fire(5)
           end
+        elsif sensors.gun_energy >= 5
+          command.fire(1)
         end
       end
     end
     def run_away!
       if target
-        self.command.heading = target.heading - RTanque::Heading::HALF_ANGLE
+        log "target is northish" if northish?(target.heading)
+        log "target is southish" if southish?(target.heading)
+        log "target is westish" if westish?(target.heading)
+        log "target is eastish" if eastish?(target.heading)
+        command.heading ||= target.heading - RTanque::Heading::HALF_ANGLE
       end
-      self.command.speed = 10
+      command.speed ||= 3
     end
     def strafe!
       if target
@@ -290,13 +336,13 @@ class Strategist < RTanque::Bot::Brain
           strafe_left!
         end
       end
-      self.command.speed = 10
+      command.speed = 3
     end
-    def strafe_left!
-      self.command.heading = target.heading - Math::PI/2
+    def strafe_left!(offset = 0)
+      command.heading = target.heading - (Math::PI/2 + offset)
     end
-    def strafe_right!
-      self.command.heading = target.heading + Math::PI/2
+    def strafe_right!(offset = 0)
+      command.heading = target.heading + (Math::PI/2 + offset)
     end
     def charge!
       if target
@@ -306,7 +352,7 @@ class Strategist < RTanque::Bot::Brain
     def damage_detection!
       @previous_health ||= 100
       if sensors.health < @previous_health
-        log("damage taken: #{@previous_health - sensors.health}")
+        # log("damage taken: #{@previous_health - sensors.health}")
         damage_taken << [sensors.ticks, @previous_health - sensors.health, sensors.health]
       end
       @previous_health = sensors.health
@@ -330,7 +376,7 @@ class Strategist < RTanque::Bot::Brain
         @game_mode = :melee
       end
       # after x ticks, default to one_on_one
-      @game_mode ||= :one_on_one if sensors.ticks > 120
+      @game_mode ||= :one_on_one if sensors.ticks > 60
     end
     def determine_game_mode!
       # if undetermined game type, figure it out
@@ -360,23 +406,35 @@ class Strategist < RTanque::Bot::Brain
       @game_mode = nil
     end
     def record_target_position!
-      return unless target
-      if @target_name != target.name
-        # new target
-        clear_store!(:target_position)
-        clear_store!(:target_heading)
-        clear_store!(:target_speed)
-        clear_store!(:target_heading_delta)
-        clear_store!(:target_speed_delta)
-        @target_name = target.name
-      end
-      store!(:target_position, calculate_position(sensors.position, target.heading, target.distance))
-      if target_last_position
-        store!(:target_heading, RTanque::Heading.new_between_points(target_last_position, target_position))
-        store!(:target_speed, target_last_position.distance(target_position))
-        if target_last_heading
-          store!(:target_heading_delta, target_last_heading.delta(target_heading))
-          store!(:target_speed_delta, target_last_speed - target_speed)
+      if target
+        if @target_name != target.name
+          # new target
+          clear_store!(:target_distance)
+          clear_store!(:target_position)
+          clear_store!(:target_heading)
+          clear_store!(:target_speed)
+          clear_store!(:target_heading_delta)
+          clear_store!(:target_speed_delta)
+          @target_name = target.name
+        end
+        store!(:target_distance, target.distance)
+        store!(:target_position, calculate_position(sensors.position, target.heading, target.distance))
+        if target_last_position
+          store!(:target_heading, RTanque::Heading.new_between_points(target_last_position, target_position))
+          store!(:target_speed, target_last_position.distance(target_position))
+          if target_last_heading
+            store!(:target_heading_delta, target_last_heading.delta(target_heading))
+            store!(:target_speed_delta, target_last_speed - target_speed)
+          end
+        end
+      else
+        # lost target
+        if target_last_position
+          if sensors.heading.delta(RTanque::Heading.new_between_points(sensors.position, target_last_position)) > 0
+            command.heading = sensors.heading + Math::PI/4
+          else
+            command.heading = sensors.heading - Math::PI/4
+          end
         end
       end
     end
@@ -482,5 +540,12 @@ class Strategist < RTanque::Bot::Brain
         sensors.position.x < arena.width - x_margin &&
         sensors.position.y > y_margin &&
         sensors.position.y < arena.height - y_margin
+    end
+    def face_yell!
+      if target
+        all = true
+        fetch_all(:target_distance).each{|dist| all &&= (dist && dist < 100)}
+        log "GET OUT OF MY FACE #{target.name}!!!!!!!" if all
+      end
     end
 end

@@ -4,6 +4,7 @@ module Strategies
       if target
         if @target_name != target.name
           # new target
+          clear_store!(:target_distance)
           clear_store!(:target_position)
           clear_store!(:target_heading)
           clear_store!(:target_speed)
@@ -12,6 +13,7 @@ module Strategies
           @target_name = target.name
         end
 
+        store!(:target_distance, target.distance)
         store!(:target_position, calculate_position(sensors.position, target.heading, target.distance))
         if target_last_position
           store!(:target_heading, RTanque::Heading.new_between_points(target_last_position, target_position))
