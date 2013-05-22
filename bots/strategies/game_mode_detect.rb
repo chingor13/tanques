@@ -15,7 +15,7 @@ module Strategies
       end
 
       # after x ticks, default to one_on_one
-      @game_mode ||= :one_on_one if sensors.ticks > 120
+      @game_mode ||= :one_on_one if sensors.ticks > 60
     end
 
     def determine_game_mode!

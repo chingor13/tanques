@@ -1,25 +1,34 @@
 module Strategies
   module TargetMovement
     def record_target_position!
-      return unless target
+      if target
+        if @target_name != target.name
+          # new target
+          clear_store!(:target_position)
+          clear_store!(:target_heading)
+          clear_store!(:target_speed)
+          clear_store!(:target_heading_delta)
+          clear_store!(:target_speed_delta)
+          @target_name = target.name
+        end
 
-      if @target_name != target.name
-        # new target
-        clear_store!(:target_position)
-        clear_store!(:target_heading)
-        clear_store!(:target_speed)
-        clear_store!(:target_heading_delta)
-        clear_store!(:target_speed_delta)
-        @target_name = target.name
-      end
-
-      store!(:target_position, calculate_position(sensors.position, target.heading, target.distance))
-      if target_last_position
-        store!(:target_heading, RTanque::Heading.new_between_points(target_last_position, target_position))
-        store!(:target_speed, target_last_position.distance(target_position))
-        if target_last_heading
-          store!(:target_heading_delta, target_last_heading.delta(target_heading))
-          store!(:target_speed_delta, target_last_speed - target_speed)
+        store!(:target_position, calculate_position(sensors.position, target.heading, target.distance))
+        if target_last_position
+          store!(:target_heading, RTanque::Heading.new_between_points(target_last_position, target_position))
+          store!(:target_speed, target_last_position.distance(target_position))
+          if target_last_heading
+            store!(:target_heading_delta, target_last_heading.delta(target_heading))
+            store!(:target_speed_delta, target_last_speed - target_speed)
+          end
+        end
+      else
+        # lost target
+        if target_last_position
+          if sensors.heading.delta(RTanque::Heading.new_between_points(sensors.position, target_last_position)) > 0
+            command.heading = sensors.heading + Math::PI/4
+          else
+            command.heading = sensors.heading - Math::PI/4
+          end
         end
       end
     end

@@ -6,9 +6,13 @@ module Strategies
 
     def fire_when_ready!
       if target && command.turret_heading
-        if (sensors.turret_heading.to_degrees - command.turret_heading.to_degrees).abs < 1
-          # control your firepower
-          command.fire(5)
+        if (sensors.turret_heading.to_degrees - command.turret_heading.to_degrees).abs < 3
+          if target.distance < 75
+            command.fire(1)
+          else
+            # control your firepower
+            command.fire(5)
+          end
         elsif sensors.gun_energy >= 5
           command.fire(1)
         end
