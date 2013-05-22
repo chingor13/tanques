@@ -21,6 +21,7 @@ class Strategist < RTanque::Bot::Brain
   include RTanque::Bot::BrainHelper
 
   def tick!
+    @game_mode ||= :one_on_one
     game_mode_detect!
     damage_detection!
 
@@ -56,18 +57,6 @@ class Strategist < RTanque::Bot::Brain
     follow_target!
     record_target_position!
 
-    # movement - pick a random movement strategy
-    # @strategy = :random_location
-    # every_x_ticks(200) do
-    #   @strategy = [:random_location, :strafe_right, :strafe_left].sample
-    # end
-    # case @strategy
-    # when :strafe_right
-    #   strafe_right!(RTanque::Heading::ONE_DEGREE * 15) if target
-    # when :strafe_left
-    #   strafe_left!(RTanque::Heading::ONE_DEGREE * 15) if target
-    # when :random_location
-    # end
     random_location!
 
     # turret / gun
